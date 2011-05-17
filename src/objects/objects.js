@@ -22,6 +22,19 @@
     };
 })();
 
+var gohan = {
+    canvas: {
+        width: 0,
+        height: 0,
+        element: null
+    },
+    init: function(canvasElem) {
+        this.canvas.element = canvasElem;
+        this.canvas.width = canvasElem.width();
+        this.canvas.height = canvasElem.height();
+    }
+};
+
 Data2D = CClass.create(
     function(x, y) {
         return {
