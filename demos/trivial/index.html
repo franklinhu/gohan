@@ -19,8 +19,9 @@
                     context.clearRect(0, 0, 500, 500); 
 
                     for (i = 0; i < objects.length; i++) {
-                        obj = objects.shift();
+                        obj = objects[i];
                         obj.fill();
+                        obj.step();
                     }
                 }
 
@@ -34,8 +35,7 @@
                         r = new Rectangle(50, 60, new Position2D(30, 40), new Velocity2D(20, 10), context, 0.14);  
                         objects.push(r);
 
-
-                        setInterval(draw, 500);
+                        setInterval(draw, 25);
                     }
                 }
 
