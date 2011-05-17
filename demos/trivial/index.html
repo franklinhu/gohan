@@ -13,8 +13,13 @@
                     context.fillRect(50, 100, 50, 50);
                     fillCircle(context, 15, 50, 50);
 
-                    c = new Circle(new Position2D(30, 40), new Velocity2D(0,0), context, 20);
+                    c = new Circle(new Position2D(30, 40), new Velocity2D(20,10), context, 20);
                     c.fill();
+                    c.step();
+                    c.fill();
+
+                    r = new Rectangle(50, 60, new Position2D(30, 40), new Velocity2D(20, 10), context, 0.14);
+                    r.fill();
                 }
 
                 function fillCircle(context, radius, x, y) {
