@@ -1,47 +1,71 @@
 /* objects.js */
 
-Data2D = function(x, y) {
-    this.x = x;
-    this.y = y;
-}
-Data2D.prototype.constructor = Data2D;
-Data2D.prototype.dimension = function() { return 2; }
-Data2D.prototype.getX = function() { return this.x; }
-Data2D.prototype.getY = function() { return this.y; }
+(function(){
+    CClass = function(){};
+    CClass.create = function(constructor) {
+        var k = this;
+        c = function() {
+            this._super = k;
+            var pubs = constructor.apply(this, arguments), self = this;
+            for (key in pubs) (function(fn, sfn) {
+                self[key] = typeof fn != "function" || typeof sfn != "function" ? fn :
+                function() { this._super = sfn; return fn.apply(this, arguments); };
+            })(pubs[key], self[key]);
+        }; 
+        c.prototype = new this;
+        c.prototype.constructor = c;
+        c.extend = this.extend || this.create;
+        return c;
+    };
+})();
 
-Position2D = function(x, y) {
-    Data2D(x, y);
-}
-Position2D.prototype = new Data2D;
-Position2D.prototype.constructor = Position2D;
+Data2D = CClass.create(
+    function(x, y) {
+        return {
+            x: x,
+            y: y,
+            dimension: 2
+        };
+    }
+);
 
-Velocity2D = function(x, y) {
-    Data2D(x, y);
-}
-Velocity2D.prototype = new Data2D;
-Velocity2D.prototype.constructor = Velocity2D;
+Position2D = Data2D.extend(
+    function(x, y) {
+        this._super(x, y);
+    }
+);
 
-GohanObject = function(position, velocity) {
-    this.position = position;
-    this.velocity = velocity;
-}
-GohanObject.prototype.constructor = GohanObject;
-GohanObject.prototype.getPosition = function() { return this.position; }
-GohanObject.prototype.getVelocity = function() { return this.velocity; }
+Velocity2D = Data2D.extend(
+    function(x, y) {
+        this._super(x, y);
+    }
+);
 
-Circle = function(position, velocity, context, radius) {
-    GohanObject(position, velocity);
-    this.context = context;
-    this.radius = radius;
-}
-Circle.prototype = new GohanObject;
-Circle.prototype.constructor = Circle;
-Circle.prototype.fill = function() {
-    var position = this.getPosition();
-    this.context.beginPath();
-    this.context.arc(position.getX(), position.getY(), this.radius, 0, Math.PI * 2, false);
-    this.context.closePath();
-    this.context.strokeStyle = "#000";
-    this.context.stroke();
-}
+GohanObject = CClass.create(
+    function(position, velocity) {
+        return {
+            position: position,
+            velocity: velocity
+        };
+    }
+);
 
+Circle = GohanObject.extend(
+    function(position, velocity, context, radius) {
+        this._super(position, velocity);
+
+        return {
+            context: context,
+
+            radius: radius,
+
+            fill: function() {
+                context.beginPath();
+                context.arc(position.x, position.y, radius, 0, Math.PI * 2, false);
+                context.closePath();
+                context.strokeStyle = "#000";
+                context.stroke();
+            }
+        }
+    }
+);
