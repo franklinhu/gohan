@@ -7,25 +7,36 @@
         <script src="../../src/objects/objects.js" type="text/javascript"></script>
         <script type="text/javascript">
             $(document).ready(function () {
+                var objects = new Array();
+                var canvas = $("#canvas")[0];
+
                 function draw() {
-                    var canvas = $("#canvas")[0];
+                    console.log("draw");
+                    /* Make sure canvas is supported */
                     var context = canvas.getContext("2d");
-                    context.fillRect(50, 100, 50, 50);
-                    fillCircle(context, 15, 50, 50);
 
-                    c = new Circle(new Position2D(30, 40), new Velocity2D(0,0), context, 20);
-                    c.fill();
+                    /* Clear the canvas before each redraw */
+                    context.clearRect(0, 0, 500, 500); 
+
+                    for (i = 0; i < objects.length; i++) {
+                        obj = objects.shift();
+                        obj.fill();
+                    }
                 }
 
-                function fillCircle(context, radius, x, y) {
-                    context.beginPath();
-                    context.arc(x, y, radius, 0, Math.PI * 2, false);
-                    context.closePath();
-                    context.strokeStyle = "#000";
-                    context.stroke();
+                function render() {
+                    if (canvas.getContext) {
+                        var context = canvas.getContext("2d");
+
+                        /* Set up objects */
+                        c = new Circle(new Position2D(30, 40), new Velocity2D(0,0), context, 20);
+                        objects.push(c);
+
+                        setInterval(draw, 500);
+                    }
                 }
 
-                draw();
+                render();
             });
 
          </script>

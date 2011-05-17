@@ -1,5 +1,8 @@
 /* objects.js */
 
+/* Javascript OOP Helper by Steffen Rusitschka
+ * http://www.ruzee.com/blog/2008/12/javascript-inheritance-via-prototypes-and-closures
+ */
 (function(){
     CClass = function(){};
     CClass.create = function(constructor) {
