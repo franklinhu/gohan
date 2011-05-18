@@ -31,9 +31,13 @@
                         gohan.init($("#canvas"));
 
                         /* Set up objects */
-                        c = new gohan.objects.Circle(new gohan.utils.Position2D(30, 40), new gohan.utils.Velocity2D(0,0), context, 20);
+                        var pos = new gohan.utils.Position2D(30, 40);
+                        var vel0 = new gohan.utils.Velocity2D(0, 0);
+                        var vel1 = new gohan.utils.Velocity2D(20, 10);
+
+                        c = new gohan.objects.Circle(pos, vel0, context, 20);
                         objects.push(c);
-                        r = new gohan.objects.Rectangle(new gohan.utils.Position2D(30, 40), new gohan.utils.Velocity2D(20, 10), 50, 60, context, 0.14);  
+                        r = new gohan.objects.Rectangle(pos, vel1, 50, 60, context, 0.14);  
                         objects.push(r);
 
                         setInterval(draw, 15);
