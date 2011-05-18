@@ -23,6 +23,10 @@
 })();
 
 var gohan = {};
+gohan.constants = {
+    gravity: 9.8
+};
+
 gohan.canvas = {
     element: null,
     height: 0,
@@ -34,12 +38,28 @@ gohan.flags = {
     gravity: false
 };
 
-gohan.init = function(canvasElem, flags) {
-    this.canvas.element = canvasElem;
-    this.canvas.width = canvasElem.width;
-    this.canvas.height = canvasElem.height;
-    this.canvas.objects = new Array();
-    this.flags = jQuery.extend(this.flags, flags);
+/**
+ * init
+ * @required arguments[0] object
+ *     @required attributes:
+ *         canvas
+ *     @optional attributes:
+ *         flags
+ *             gravity
+ **/
+gohan.init = function(/* arguments */) {
+    var obj = arguments[0];
+    if (obj.canvas) {
+        this.canvas.element = obj.canvas;
+        this.canvas.width = obj.canvas.width;
+        this.canvas.height = obj.canvas.height;
+        this.canvas.objects = new Array();
+        if (obj.flags) {
+            this.flags = jQuery.extend(this.flags, obj.flags);
+        }
+    } else {
+        console.log("GOHAN ERROR: init missing canvas argument");
+    }
 };
 
 gohan.draw = function() {
@@ -65,7 +85,7 @@ gohan.utils = (function() {
         this.add = function(other) {
             this.updateX(this.x + other.x);
             this.updateY(this.y + other.y);
-        }
+        };
         this.updateX = function(newX) {
             this.x = newX;
         };
@@ -102,28 +122,41 @@ gohan.utils = (function() {
     Position2D.prototype.constructor = Position2D;
 
     /* Velocity2D class */
-    Velocity2D = function(x, y) {
+    var Velocity2D = function(x, y) {
         Data2D.call(this, x, y);
         this.step = function(acceleration) {
             this.add(acceleration);
-        }
+        };
     };
     Velocity2D.prototype = new Data2D;
     Velocity2D.prototype.constructor = Velocity2D;
 
     /* Acceleration2D class */
-    Acceleration2D = function(x, y) {
+    var Acceleration2D = function(x, y) {
         Data2D.call(this, x, y);
     };
     Acceleration2D.prototype = new Data2D;
     Acceleration2D.prototype.constructor = Acceleration2D;
+
+    /* Force2D class */
+    var Force2D = function(x, y, ttl) {
+        Data2D.call(this, x, y);
+        this.ttl = ttl;
+    };
+    Force2D.prototype = new Data2D;
+    Force2D.prototype.constructor = Force2D;
+
+    var gravity = new Force2D(0, gohan.constants.gravity, -1);
 
     var utils = {
         Data2D: Data2D,
         Vec2D: Vec2D,
         Position2D: Position2D,
         Velocity2D: Velocity2D,
-        Acceleration2D: Acceleration2D
+        Acceleration2D: Acceleration2D,
+        Force2D: Force2D,
+
+        gravity: gravity
     };
     return utils;
 })();
@@ -134,10 +167,13 @@ gohan.objects = (function() {
     var GohanObject = function(position, velocity, context, angle, xRad, yRad) {
         this.position = jQuery.extend({}, position);
         this.velocity = jQuery.extend({}, velocity);
+        this.forces = {
+            objs: [],
+            acceleration: new gohan.utils.Acceleration2D(0, 0),
+            dirty: true
+        };
         if (gohan.flags.gravity) {
-            this.acceleration = new Acceleration2D(0, 9.8);
-        } else {
-            this.acceleration = new Acceleration2D(0, 0);
+            this.forces.objs.push(gohan.utils.gravity);
         }
         this.context = context;
         this.angle = angle;
@@ -146,7 +182,8 @@ gohan.objects = (function() {
         this.step = function() {
             this.checkWallCollisions();
             this.checkCollisions();
-            this.velocity.step(this.acceleration);
+            this.resolveForces();
+            this.velocity.step(this.forces.acceleration);
             this.position.step(this.velocity);
         };
         this.checkWallCollisions = function() {
@@ -201,6 +238,37 @@ gohan.objects = (function() {
                         thatVel.updateY(thatVel.y - (2 * displacement.y * thatDot));
                     }
                 }
+            }
+        };
+        this.addForce = function(force) {
+            this.forces.objs.push(force);
+            this.forces.dirty = true;
+        };
+        this.removeForce = function(force) {
+            /* FIXME make O(1) */
+            var forces = this.forces.objs;
+            var i = 0;
+            for(; i < forces.length; i++) {
+                if (forces[i] === force) {
+                    break;
+                }
+            }
+            if (i < forces.length) {
+                forces.splice(i, 1);
+            }
+            this.forces.dirty = true;
+        };
+        this.resolveForces = function () {
+            if(this.forces.dirty) {
+                var acc = this.forces.acceleration;
+                acc.updateX(0);
+                acc.updateY(0);
+                var forces = this.forces.objs;
+
+                for(var i = 0; i < forces.length; i++) {
+                    acc.add(forces[i]);
+                }
+                this.forces.dirty = false;
             }
         };
     };

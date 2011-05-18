@@ -28,7 +28,7 @@
                 function render() {
                     if (canvas.getContext) {
                         var context = canvas.getContext("2d");
-                        gohan.init($("#canvas"), {gravity: true});
+                        gohan.init({canvas: $("#canvas"), flags: {gravity: true}});
 
                         /* Set up objects */
                         var pos = new gohan.utils.Position2D(30, 40);
