@@ -24,14 +24,35 @@
 
 var gohan = {
     canvas: {
-        width: 0,
+        element: null,
         height: 0,
-        element: null
+        objects: null,
+        width: 0
     },
-    init: function(canvasElem) {
+    flags: {
+        gravity: false
+    },
+    init: function(canvasElem, flags) {
         this.canvas.element = canvasElem;
-        this.canvas.width = canvasElem.width();
-        this.canvas.height = canvasElem.height();
+        this.canvas.width = canvasElem.width;
+        this.canvas.height = canvasElem.height;
+        this.canvas.objects = new Array();
+        this.flags = jQuery.extend(this.flags, flags);
+    },
+    draw: function() {
+        console.log("blah");
+        /* Make sure canvas is supported */
+        var context = gohan.canvas.element.getContext("2d");
+
+        /* Clear the canvas before each redraw */
+        context.clearRect(0, 0, 500, 500);
+        var objects = gohan.canvas.objects;
+
+        for (i = 0; i < objects.length; i++) {
+            obj = objects[i];
+            obj.fill();
+            obj.step();
+        }
     },
     utils: (function() {
         /* Data2D class */
