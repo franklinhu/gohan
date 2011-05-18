@@ -141,12 +141,18 @@ var gohan = {
                          */
                         thisPos = this.position;
                         thatPos = obj.position;
-                        distance = Math.sqrt(Math.pow(thisPos.x - thatPos.x, 2) + Math.pow(thisPos.y - thatPos.y, 2));
+
+                        /* Using simple operations instead of Math.sqrt, etc for speedup*/
+                        xDiff = thisPos.x - thatPos.x;
+                        yDiff = thisPos.y - thatPos.y;
+                        distance = (xDiff * xDiff) + (yDiff * yDiff);
                         
                         /* If distance < radius_1 + radius_2, circles intersect 
                          * FIXME: Collisions for non-circles
                          */
-                        if (distance < this.radius + obj.radius) {
+
+                        radius = this.radius + obj.radius;
+                        if (distance < radius * radius) {
                             console.log("COLLISION");
                             thisVel = this.velocity;
                             thatVel = obj.velocity;
