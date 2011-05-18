@@ -130,6 +130,7 @@ gohan.utils = (function() {
 
 /* Objects */
 gohan.objects = (function() {
+    /* GohanObject class */
     var GohanObject = function(position, velocity, context, angle, xRad, yRad) {
         this.position = jQuery.extend({}, position);
         this.velocity = jQuery.extend({}, velocity);
@@ -204,20 +205,32 @@ gohan.objects = (function() {
         };
     };
 
+    /* Circle class */
     var Circle = function(position, velocity, context, radius) {
         GohanObject.call(this, position, velocity, context, 0, radius, radius);
         this.radius = radius;
         this.fill = function() {
-            this.context.beginPath();
-            this.context.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2, false);
-            this.context.closePath();
-            this.context.strokeStyle = "#000";
-            this.context.stroke();
+            var x = this.position.x;
+            var y = this.position.y;
+            var rad = this.radius;
+            var angle = this.angle;
+            var context = this.context;
+
+            context.beginPath();
+            context.arc(x, y, rad, 0, Math.PI * 2, false);
+            
+            context.moveTo(x, y);
+            context.lineTo(x + rad * Math.cos(angle), y + rad * Math.sin(angle));
+            context.closePath();
+
+            context.strokeStyle = "#000";
+            context.stroke();
         };
     };
     Circle.prototype = new GohanObject;
     Circle.prototype.constructor = Circle;
 
+    /* Rectangle class */
     var Rectangle = function(position, velocity, width, height, context, angle) {
         /* Change position to be the center of the rectangle, for dealing
          * with collisions 
