@@ -129,6 +129,8 @@ var gohan = {
                     vel.updateY(-vel.y);
                 }
             };
+            this.checkCollisions = function () {
+            };
         };
 
         var Circle = function(position, velocity, context, radius) {
@@ -146,9 +148,15 @@ var gohan = {
         Circle.prototype.constructor = Circle;
 
         var Rectangle = function(position, velocity, width, height, context, angle) {
+            /* Change position to be the center of the rectangle, for dealing
+             * with collisions 
+             * TODO: Change to bounding boxes
+             * TODO: Add spinning on collisions 
+             */
             position.updateX(position.x + width/2);
             position.updateY(position.y + height/2);
             GohanObject.call(this, position, velocity, context, angle, width/2, height/2);
+
             this.width = width;
             this.height = height;
             this.fill = function() {
@@ -159,6 +167,8 @@ var gohan = {
 
             };
         };
+        Rectangle.prototype = new GohanObject;
+        Rectangle.prototype.constructor = Rectangle;
 
         var objs = {
             GohanObject: GohanObject,
