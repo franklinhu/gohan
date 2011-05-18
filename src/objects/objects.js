@@ -33,7 +33,8 @@ var gohan = {
         this.canvas.width = canvasElem.width();
         this.canvas.height = canvasElem.height();
     },
-    objects: (function() {
+    utils: (function() {
+        /* Data2D class */
         var Data2D = function(x, y) {
             this.x = x;
             this.y = y;
@@ -46,6 +47,7 @@ var gohan = {
             this.dimension = 2;
         };
 
+        /* Position2D class */
         var Position2D = function(x, y) {
             Data2D.call(this, x, y);
             this.step = function(v) {
@@ -56,114 +58,85 @@ var gohan = {
         Position2D.prototype = new Data2D;
         Position2D.prototype.constructor = Position2D;
 
-        Velocity2D = function() { };
+        /* Velocity2D class */
+        Velocity2D = function(x, y) {
+            Data2D.call(this, x, y);
+        };
         Velocity2D.prototype = new Data2D;
+        Velocity2D.prototype.constructor = Velocity2D;
 
-        var objs = {
+        var utils = {
             Data2D: Data2D,
             Position2D: Position2D,
             Velocity2D: Velocity2D
         };
+        return utils;
+    })(),
+
+    /* Objects */
+    objects: (function() {
+        var GohanObject = function(position, velocity, context, angle, xRad, yRad) {
+            this.position = position;
+            this.velocity = velocity;
+            this.context = context;
+            this.angle = angle;
+            this.xRadius = xRad;
+            this.yRadius = yRad;
+            this.step = function() {
+                this.checkWallCollisions();
+                this.position.step(this.velocity);
+            };
+            this.checkWallCollisions = function() {
+                /* If object collides with wall, reverse velocity */
+                var pos = this.position;
+                var vel = this.velocity;
+                if (pos.x - xRad < 0 && vel.x < 0) {
+                    vel.updateX(-vel.x);
+                } else if (pos.y + yRad > gohan.canvas.height && vel.y > 0) {
+                    vel.updateY(-vel.y);
+                } else if (pos.x + xRad > gohan.canvas.width && vel.x > 0) {
+                    vel.updateX(-vel.x);
+                } else if (pos.y - yRad < 0 && vel.y < 0) {
+                    vel.updateY(-vel.y);
+                }
+            };
+        };
+
+        var Circle = function(position, velocity, context, radius) {
+            GohanObject.call(this, position, velocity, context, 0, radius, radius);
+            this.radius = radius;
+            this.fill = function() {
+                this.context.beginPath();
+                this.context.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2, false);
+                this.context.closePath();
+                this.context.strokeStyle = "#000";
+                this.context.stroke();
+            };
+        };
+        Circle.prototype = new GohanObject;
+        Circle.prototype.constructor = Circle;
+
+        var Rectangle = function(position, velocity, width, height, context, angle) {
+            position.updateX(position.x + width/2);
+            position.updateY(position.y + height/2);
+            GohanObject.call(this, position, velocity, context, angle, width/2, height/2);
+            this.width = width;
+            this.height = height;
+            this.fill = function() {
+                context.save();
+                context.rotate(this.angle);
+                context.fillRect(this.position.x - this.width/2, this.position.y - this.height/2, this.width, this.height);
+                context.restore();
+
+            };
+        };
+
+        var objs = {
+            GohanObject: GohanObject,
+            Circle: Circle,
+            Rectangle: Rectangle
+        };
         return objs;
     })()
 };
-
-Data2D = CClass.create(
-    function(x, y) {
-        return {
-            x: x,
-            y: y,
-            updateX: function(newX) {
-                this.x = newX;
-            },
-            updateY: function(newY) {
-                this.y = newY;
-            },
-            dimension: 2
-        };
-    }
-);
-
-Position2D = Data2D.extend(
-    function(x, y) {
-        this._super(x, y);
-
-        return {
-            step: function(v) {
-                this.updateX(this.x + v.x);
-                this.updateY(this.y + v.y);
-            }
-        }
-    }
-);
-
-Velocity2D = Data2D.extend(
-    function(x, y) {
-        this._super(x, y);
-    }
-);
-
-GohanObject = CClass.create(
-    function(position, velocity, context, angle, xRad, yRad) {
-        return {
-            position: position,
-            velocity: velocity,
-            context: context,
-            angle: angle,
-            xRadius: xRad,
-            yRadius: yRad,
-            step: function () {
-                this.checkWallCollisions();
-                this.position.step(this.velocity);        
-            },
-            checkWallCollisions: function () {
-                /* If object collides with wall, reverse velocity */
-                if (position.x - xRad < 0 && velocity.x < 0) {
-                    this.velocity.updateX(-this.velocity.x);
-                } else if (position.y + yRad > gohan.canvas.height && velocity.y > 0) {
-                    this.velocity.updateY(-this.velocity.y);
-                } else if (position.x + xRad > gohan.canvas.width && velocity.x > 0) {
-                    this.velocity.updateX(-this.velocity.x);
-                } else if (position.y - yRad < 0 && velocity.y < 0) {
-                    this.velocity.updateY(-this.velocity.y);
-                }
-            }
-        };
-    }
-);
-
-Circle = GohanObject.extend(
-    function(position, velocity, context, radius) {
-        this._super(position, velocity, context, 0, radius, radius);
-
-        return {
-            radius: radius,
-            fill: function() {
-                console.log(this.position);
-                context.beginPath();
-                context.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2, false);
-                context.closePath();
-                context.strokeStyle = "#000";
-                context.stroke();
-            }
-        }
-    }
-);
-
-Rectangle = GohanObject.extend(
-    function(width, height, position, velocity, context, angle) {
-        position.updateX(position.x + width/2);
-        position.updateY(position.y + height/2);
-        this._super(position, velocity, context, angle, width/2, height/2);
-
-        return {
-            fill: function() {
-                context.save();
-                context.rotate(this.angle);
-                context.fillRect(this.position.x - width/2, this.position.y - height/2, width, height);
-                context.restore();
-            }
-        }
-    }
-);
 
