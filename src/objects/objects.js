@@ -104,14 +104,29 @@ Velocity2D = Data2D.extend(
 );
 
 GohanObject = CClass.create(
-    function(position, velocity, context, angle) {
+    function(position, velocity, context, angle, xRad, yRad) {
         return {
             position: position,
             velocity: velocity,
             context: context,
             angle: angle,
+            xRadius: xRad,
+            yRadius: yRad,
             step: function () {
+                this.checkWallCollisions();
                 this.position.step(this.velocity);        
+            },
+            checkWallCollisions: function () {
+                /* If object collides with wall, reverse velocity */
+                if (position.x - xRad < 0 && velocity.x < 0) {
+                    this.velocity.updateX(-this.velocity.x);
+                } else if (position.y + yRad > gohan.canvas.height && velocity.y > 0) {
+                    this.velocity.updateY(-this.velocity.y);
+                } else if (position.x + xRad > gohan.canvas.width && velocity.x > 0) {
+                    this.velocity.updateX(-this.velocity.x);
+                } else if (position.y - yRad < 0 && velocity.y < 0) {
+                    this.velocity.updateY(-this.velocity.y);
+                }
             }
         };
     }
@@ -119,7 +134,7 @@ GohanObject = CClass.create(
 
 Circle = GohanObject.extend(
     function(position, velocity, context, radius) {
-        this._super(position, velocity, context, 0);
+        this._super(position, velocity, context, 0, radius, radius);
 
         return {
             radius: radius,
@@ -137,13 +152,15 @@ Circle = GohanObject.extend(
 
 Rectangle = GohanObject.extend(
     function(width, height, position, velocity, context, angle) {
-        this._super(position, velocity, context, angle);
+        position.updateX(position.x + width/2);
+        position.updateY(position.y + height/2);
+        this._super(position, velocity, context, angle, width/2, height/2);
 
         return {
             fill: function() {
                 context.save();
                 context.rotate(this.angle);
-                context.fillRect(this.position.x, this.position.y, width, height);
+                context.fillRect(this.position.x - width/2, this.position.y - height/2, width, height);
                 context.restore();
             }
         }
