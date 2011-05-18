@@ -32,7 +32,40 @@ var gohan = {
         this.canvas.element = canvasElem;
         this.canvas.width = canvasElem.width();
         this.canvas.height = canvasElem.height();
-    }
+    },
+    objects: (function() {
+        var Data2D = function(x, y) {
+            this.x = x;
+            this.y = y;
+            this.updateX = function(newX) {
+                this.x = newX;
+            };
+            this.updateY = function(newY) {
+                this.y = newY;
+            };
+            this.dimension = 2;
+        };
+
+        var Position2D = function(x, y) {
+            Data2D.call(this, x, y);
+            this.step = function(v) {
+                this.updateX(this.x + v.x);
+                this.updateY(this.y + v.y);
+            };
+        };
+        Position2D.prototype = new Data2D;
+        Position2D.prototype.constructor = Position2D;
+
+        Velocity2D = function() { };
+        Velocity2D.prototype = new Data2D;
+
+        var objs = {
+            Data2D: Data2D,
+            Position2D: Position2D,
+            Velocity2D: Velocity2D
+        };
+        return objs;
+    })()
 };
 
 Data2D = CClass.create(
@@ -91,6 +124,7 @@ Circle = GohanObject.extend(
         return {
             radius: radius,
             fill: function() {
+                console.log(this.position);
                 context.beginPath();
                 context.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2, false);
                 context.closePath();

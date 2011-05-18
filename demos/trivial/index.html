@@ -30,9 +30,9 @@
                         var context = canvas.getContext("2d");
 
                         /* Set up objects */
-                        c = new Circle(new Position2D(30, 40), new Velocity2D(0,0), context, 20);
+                        c = new Circle(new gohan.objects.Position2D(30, 40), new Velocity2D(0,0), context, 20);
                         objects.push(c);
-                        r = new Rectangle(50, 60, new Position2D(30, 40), new Velocity2D(20, 10), context, 0.14);  
+                        r = new Rectangle(50, 60, new gohan.objects.Position2D(30, 40), new Velocity2D(20, 10), context, 0.14);  
                         objects.push(r);
 
                         setInterval(draw, 25);
