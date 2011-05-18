@@ -35,7 +35,13 @@ gohan.canvas = {
 };
 
 gohan.flags = {
-    gravity: false
+    gravity: false,
+    walls: {
+        0: true,
+        1: true,
+        2: true,
+        3: true
+    }
 };
 
 /**
@@ -45,7 +51,12 @@ gohan.flags = {
  *         canvas
  *     @optional attributes:
  *         flags
- *             gravity
+ *             gravity: {true, false}, @default false
+ *             walls
+ *                 0: {true, false}, @default true, top
+ *                 1: {true, false}, @default true, right
+ *                 2: {true, false}, @default true, bottom
+ *                 3: {true, false}, @default true, left
  **/
 gohan.init = function(/* arguments */) {
     var obj = arguments[0];
@@ -60,6 +71,8 @@ gohan.init = function(/* arguments */) {
     } else {
         console.log("GOHAN ERROR: init missing canvas argument");
     }
+
+    /* Create walls if necessary */
 };
 
 gohan.draw = function() {
@@ -148,6 +161,10 @@ gohan.utils = (function() {
 
     var gravity = new Force2D(0, gohan.constants.gravity, -1);
 
+    var copy = function(obj) {
+        return jQuery.extend({}, obj);
+    };
+
     var utils = {
         Data2D: Data2D,
         Vec2D: Vec2D,
@@ -156,7 +173,9 @@ gohan.utils = (function() {
         Acceleration2D: Acceleration2D,
         Force2D: Force2D,
 
-        gravity: gravity
+        gravity: gravity,
+
+        copy: copy
     };
     return utils;
 })();
@@ -165,8 +184,8 @@ gohan.utils = (function() {
 gohan.objects = (function() {
     /* GohanObject class */
     var GohanObject = function(position, velocity, context, angle, xRad, yRad) {
-        this.position = jQuery.extend({}, position);
-        this.velocity = jQuery.extend({}, velocity);
+        this.position = gohan.utils.copy(position);
+        this.velocity = gohan.utils.copy(velocity);
         this.forces = {
             objs: [],
             acceleration: new gohan.utils.Acceleration2D(0, 0),
@@ -264,6 +283,7 @@ gohan.objects = (function() {
                 acc.updateX(0);
                 acc.updateY(0);
                 var forces = this.forces.objs;
+                var newForces = [];
 
                 for(var i = 0; i < forces.length; i++) {
                     acc.add(forces[i]);
