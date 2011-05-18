@@ -78,7 +78,20 @@ GohanObject = CClass.create(
             context: context,
             angle: angle,
             step: function () {
+                this.checkWallCollisions();
                 this.position.step(this.velocity);        
+            },
+            checkWallCollisions: function () {
+                /* If object collides with wall, reverse velocity */
+                if (position.x < 0 && velocity.x < 0) {
+                    this.velocity.updateX(-this.velocity.x);
+                } else if (position.y > gohan.canvas.height && velocity.y > 0) {
+                    this.velocity.updateY(-this.velocity.y);
+                } else if (position.x > gohan.canvas.width && velocity.x > 0) {
+                    this.velocity.updateX(-this.velocity.x);
+                } else if (position.y < 0 && velocity.y < 0) {
+                    this.velocity.updateY(-this.velocity.y);
+                }
             }
         };
     }
