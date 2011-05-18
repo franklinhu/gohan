@@ -37,6 +37,19 @@
                     }
                 }
 
+                $("#canvas").click(function(e) {
+                    if (canvas.getContext) {
+                        var context = canvas.getContext("2d");
+                        x = e.pageX - e.target.offsetLeft;
+                        y = e.pageY - e.target.offsetTop;
+
+                        pos = new gohan.utils.Position2D(x, y);
+                        vel = new gohan.utils.Velocity2D(3, 3);
+                        c = new gohan.objects.Circle(pos, vel, context, 20);
+                        gohan.canvas.objects.push(c);
+                    }
+                });
+
                 render();
             });
 

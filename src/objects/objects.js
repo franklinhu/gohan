@@ -47,7 +47,7 @@ var gohan = {
         context.clearRect(0, 0, 500, 500);
         var objects = gohan.canvas.objects;
 
-        for (i = 0; i < objects.length; i++) {
+        for (var i = 0; i < objects.length; i++) {
             obj = objects[i];
             obj.fill();
             obj.step();
@@ -148,7 +148,7 @@ var gohan = {
             this.checkCollisions = function () {
                 /* FIXME: Do in non-naive way */
                 var objects = gohan.canvas.objects;
-                for (j = 0; j < objects.length; j++) {
+                for (var j = 0; j < objects.length; j++) {
                     obj = objects[j];
                     
                     if (obj != this) {
