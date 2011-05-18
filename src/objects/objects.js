@@ -65,7 +65,22 @@ var gohan = {
                 this.y = newY;
             };
             this.dimension = 2;
+            this.dot = function(other) {
+                return (this.x * other.x) + (this.y * other.y);
+            };
         };
+
+        /* Vec2D class */
+        var Vec2D = function(x, y) {
+            Data2D.call(this, x, y);
+            this.normalize = function() {
+                mag = Math.sqrt((this.x * this.x) + (this.y * this.y));
+                this.updateX(this.x/mag);
+                this.updateY(this.y/mag);
+            };
+        };
+        Vec2D.prototype = new Data2D;
+        Vec2D.prototype.constructor = Vec2D;
 
         /* Position2D class */
         var Position2D = function(x, y) {
@@ -94,6 +109,7 @@ var gohan = {
 
         var utils = {
             Data2D: Data2D,
+            Vec2D: Vec2D,
             Position2D: Position2D,
             Velocity2D: Velocity2D,
             Acceleration2D: Acceleration2D
@@ -153,14 +169,18 @@ var gohan = {
 
                         radius = this.radius + obj.radius;
                         if (distance < radius * radius) {
-                            console.log("COLLISION");
                             thisVel = this.velocity;
                             thatVel = obj.velocity;
 
-                            thisVel.updateX(-thisVel.x);
-                            thisVel.updateY(-thisVel.y);
-                            thatVel.updateX(-thatVel.x);
-                            thatVel.updateY(-thatVel.y);
+                            displacement = new gohan.utils.Vec2D(thisPos.x - thatPos.x, thisPos.y - thatPos.y);
+                            displacement.normalize();
+                            thisDot = thisVel.dot(displacement);
+                            thatDot = thatVel.dot(displacement); 
+
+                            thisVel.updateX(thisVel.x - (2 * displacement.x * thisDot));
+                            thisVel.updateY(thisVel.y - (2 * displacement.y * thisDot));
+                            thatVel.updateX(thatVel.x - (2 * displacement.x * thatDot));
+                            thatVel.updateY(thatVel.y - (2 * displacement.y * thatDot));
                         }
                     }
                 }
