@@ -16,14 +16,22 @@
                         gohan.init(canvas);
 
                         /* Set up objects */
-                        var pos = new gohan.utils.Position2D(30, 40);
-                        var vel0 = new gohan.utils.Velocity2D(0, 0);
-                        var vel1 = new gohan.utils.Velocity2D(20, 10);
+                        var pos0 = new gohan.utils.Position2D(30, 40);
+                        var pos1 = new gohan.utils.Position2D(100, 300);
+                        var pos2 = new gohan.utils.Position2D(0, 400);
+                        var vel0 = new gohan.utils.Velocity2D(7, 2);
+                        var vel1 = new gohan.utils.Velocity2D(3, 7);
+                        var vel2 = new gohan.utils.Velocity2D(5, 1);
 
-                        c = new gohan.objects.Circle(pos, vel0, context, 20);
-                        gohan.canvas.objects.push(c);
-                        r = new gohan.objects.Rectangle(pos, vel1, 50, 60, context, 0.14);  
-                        gohan.canvas.objects.push(r);
+                        c1 = new gohan.objects.Circle(pos0, vel0, context, 20);
+                        gohan.canvas.objects.push(c1);
+                        c2 = new gohan.objects.Circle(pos1, vel1, context, 20);
+                        gohan.canvas.objects.push(c2);
+                        c3 = new gohan.objects.Circle(pos2, vel2, context, 20);
+                        gohan.canvas.objects.push(c3);
+
+                        //r = new gohan.objects.Rectangle(pos, vel1, 50, 60, context, 0.14);  
+                        //gohan.canvas.objects.push(r);
 
                         setInterval(gohan.draw, 15);
                     }
@@ -36,6 +44,6 @@
     </head>
 
     <body>
-        <canvas id="canvas" width="500" height="500"></canvas>
+        <canvas id="canvas" width="400" height="400"></canvas>
     </body>
 </html>

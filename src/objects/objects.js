@@ -40,7 +40,6 @@ var gohan = {
         this.flags = jQuery.extend(this.flags, flags);
     },
     draw: function() {
-        console.log("blah");
         /* Make sure canvas is supported */
         var context = gohan.canvas.element.getContext("2d");
 
@@ -113,6 +112,7 @@ var gohan = {
             this.yRadius = yRad;
             this.step = function() {
                 this.checkWallCollisions();
+                this.checkCollisions();
                 this.position.step(this.velocity);
             };
             this.checkWallCollisions = function() {
@@ -130,6 +130,34 @@ var gohan = {
                 }
             };
             this.checkCollisions = function () {
+                /* FIXME: Do in non-naive way */
+                var objects = gohan.canvas.objects;
+                for (j = 0; j < objects.length; j++) {
+                    obj = objects[j];
+                    
+                    if (obj != this) {
+                        /* Distance between two circles 
+                         * Distance = sqrt((x_1 - x_2)^2 + (y_1 - y_2)^2)
+                         */
+                        thisPos = this.position;
+                        thatPos = obj.position;
+                        distance = Math.sqrt(Math.pow(thisPos.x - thatPos.x, 2) + Math.pow(thisPos.y - thatPos.y, 2));
+                        
+                        /* If distance < radius_1 + radius_2, circles intersect 
+                         * FIXME: Collisions for non-circles
+                         */
+                        if (distance < this.radius + obj.radius) {
+                            console.log("COLLISION");
+                            thisVel = this.velocity;
+                            thatVel = obj.velocity;
+
+                            thisVel.updateX(-thisVel.x);
+                            thisVel.updateY(-thisVel.y);
+                            thatVel.updateX(-thatVel.x);
+                            thatVel.updateY(-thatVel.y);
+                        }
+                    }
+                }
             };
         };
 
