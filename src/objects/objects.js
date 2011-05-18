@@ -77,7 +77,7 @@ var gohan = {
     objects: (function() {
         var GohanObject = function(position, velocity, context, angle, xRad, yRad) {
             this.position = jQuery.extend({}, position);
-            this.velocity = velocity;
+            this.velocity = jQuery.extend({}, velocity);
             this.context = context;
             this.angle = angle;
             this.xRadius = xRad;
