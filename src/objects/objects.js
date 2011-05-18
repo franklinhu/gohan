@@ -86,10 +86,18 @@ var gohan = {
         Velocity2D.prototype = new Data2D;
         Velocity2D.prototype.constructor = Velocity2D;
 
+        /* Acceleration2D class */
+        Acceleration2D = function(x, y) {
+            Data2D.call(this, x, y);
+        };
+        Acceleration2D.prototype = new Data2D;
+        Acceleration2D.prototype.constructor = Acceleration2D;
+
         var utils = {
             Data2D: Data2D,
             Position2D: Position2D,
-            Velocity2D: Velocity2D
+            Velocity2D: Velocity2D,
+            Acceleration2D: Acceleration2D
         };
         return utils;
     })(),
