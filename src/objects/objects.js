@@ -45,18 +45,19 @@ gohan.flags = {
 };
 
 /**
- * init
- * @required arguments[0] object
- *     @required attributes:
- *         canvas
- *     @optional attributes:
- *         flags
- *             gravity: {true, false}, @default false
- *             walls
- *                 0: {true, false}, @default true, top
- *                 1: {true, false}, @default true, right
- *                 2: {true, false}, @default true, bottom
- *                 3: {true, false}, @default true, left
+ *  init
+ *  @required arguments[0] object
+ *      @required attributes:
+ *          canvas
+ *      @optional attributes:
+ *          flags
+ *              gravity: {true, false}, @default false
+ *              walls
+ *                  0: {true, false}, @default true, top
+ *                  1: {true, false}, @default true, right
+ *                  2: {true, false}, @default true, bottom
+ *                  3: {true, false}, @default true, left
+ *  @return void
  **/
 gohan.init = function(/* arguments */) {
     var obj = arguments[0];
@@ -75,6 +76,44 @@ gohan.init = function(/* arguments */) {
     /* Create walls if necessary */
 };
 
+/**
+ *  findCollisions
+ *  @return Array of unique pairs of colliding objects
+ **/
+gohan.findCollisions = function() {
+    var objects = gohan.canvas.objects;
+    var thisObj = null, thatObj = null;
+    var collisions = [];
+    for (var j = 0; j < objects.length; j++) {
+        thisObj = objects[j];
+        thisObj.sanityCheck();
+        for (var k = j + 1; k < objects.length; k++) {
+            thatObj = objects[k];
+            thatObj.sanityCheck();
+
+            if(thisObj.collidesWith(thatObj)) {
+                collisions.push([thisObj, thatObj]);
+            }
+        }
+    }
+    return collisions;
+};
+
+/**
+ *  resolveCollision
+ *  @param pair of colliding objects
+ *  @return void
+ **/
+gohan.resolveCollision = function(pair) {
+    var obj0 = pair[0];
+    var obj1 = pair[1];
+    if (obj0.fixed) {
+        obj0.resolveCollision(obj1);
+    } else {
+        obj1.resolveCollision(obj0);
+    }
+};
+
 gohan.draw = function() {
     /* Make sure canvas is supported */
     var context = gohan.canvas.element.getContext("2d");
@@ -90,14 +129,63 @@ gohan.draw = function() {
     }
 };
 
+gohan.step = function() {
+    var pairs = gohan.findCollisions();
+    for (var i = 0; i < pairs.length; i++) {
+        gohan.resolveCollision(pairs[i]);
+    }
+    gohan.draw();
+};
+
+gohan.physics = {
+    /**
+     *  elasticCollision
+     *       (m1 - m2)        (2m2)
+     *  v1 = --------- u1 + --------- u2
+     *       (m1 + m2)      (m1 + m2)
+     *
+     *       (m2 - m1)        (2m1)
+     *  v2 = --------- u2 + --------- u1
+     *       (m1 + m2)      (m1 + m2)
+     **/
+    elasticCollision: function(m1, m2, u1, u2) {
+        var sum = m1 + m2,
+            c1 = (m1 - m2) / sum,
+            c2 = 2 * m2 / sum,
+            c3 = (m2 - m1) / sum,
+            c4 = 2 * m1 / sum;
+
+        var a = u1.mult(c1),
+            b = u2.mult(c2),
+            c = u2.mult(c3),
+            d = u1.mult(c4);
+            
+        a.addi(b);
+        c.addi(d);
+        return [a, c];
+    }
+};
+
 gohan.utils = (function() {
     /* Data2D class */
     var Data2D = function(x, y) {
         this.x = x;
         this.y = y;
         this.add = function(other) {
+            var newObj = gohan.copy(this);
+            newObj.x += other.x;
+            newObj.y += other.y;
+            return newObj;
+        };
+        this.addi = function(other) {
             this.updateX(this.x + other.x);
             this.updateY(this.y + other.y);
+        };
+        this.mult = function(multiplier) {
+            var newObj = gohan.utils.copy(this);
+            newObj.x *= multiplier;
+            newObj.y *= multiplier;
+            return newObj;
         };
         this.updateX = function(newX) {
             this.x = newX;
@@ -130,6 +218,14 @@ gohan.utils = (function() {
             this.updateX(this.x + v.x);
             this.updateY(this.y + v.y);
         };
+        this.squareDistanceTo = function(other) {
+            var x = this.x - other.x;
+            var y = this.y - other.y;
+            return x * x + y * y;
+        };
+        this.vectorTo = function(other) {
+            return new Vec2D(other.x - this.x, other.y - this.y);
+        };
     };
     Position2D.prototype = new Data2D;
     Position2D.prototype.constructor = Position2D;
@@ -138,7 +234,7 @@ gohan.utils = (function() {
     var Velocity2D = function(x, y) {
         Data2D.call(this, x, y);
         this.step = function(acceleration) {
-            this.add(acceleration);
+            this.addi(acceleration);
         };
     };
     Velocity2D.prototype = new Data2D;
@@ -198,12 +294,46 @@ gohan.objects = (function() {
         this.angle = angle;
         this.xRadius = xRad;
         this.yRadius = yRad;
+        this.fixed = false;
+
+
+        /* Methods */
+        this.sanityCheck = function() {
+           if (!this.velocity) {
+                throw new Error("NO VELOCITY");
+            }
+        };
         this.step = function() {
+            this.sanityCheck();
             this.checkWallCollisions();
-            this.checkCollisions();
             this.resolveForces();
             this.velocity.step(this.forces.acceleration);
             this.position.step(this.velocity);
+        };
+        this.collidesWith = function(other) {
+            /* Check bounding sphere */
+            var squareDistance = this.position.squareDistanceTo(other.position);
+            var radius = this.maxRadius + other.maxRadius;
+            if (squareDistance > radius * radius) {
+                /* Not in bounding sphere, not colliding */
+                return false;
+            }
+
+            /* FIXME: Possibly colliding, 
+               since circles, assume colliding for now */
+            return true;
+        };
+        this.resolveCollision = function(other) {
+            /* FIXME: Collisions for non circles */
+
+            var thisVel = this.velocity;
+            var thatVel = other.velocity;
+            var thisPos = this.position;
+            var thatPos = other.position;
+
+            var v1v2 = gohan.physics.elasticCollision(this.radius, other.radius, this.velocity, other.velocity);
+            this.velocity = v1v2[0];
+            other.velocity = v1v2[1];
         };
         this.checkWallCollisions = function() {
             /* If object collides with wall, reverse velocity */
@@ -219,48 +349,14 @@ gohan.objects = (function() {
                 vel.updateY(-vel.y);
             }
         };
-        this.checkCollisions = function () {
-            /* FIXME: Do in non-naive way */
-            var objects = gohan.canvas.objects;
-            for (var j = 0; j < objects.length; j++) {
-                obj = objects[j];
-                
-                if (obj != this) {
-                    /* Distance between two circles 
-                     * Distance = sqrt((x_1 - x_2)^2 + (y_1 - y_2)^2)
-                     */
-                    thisPos = this.position;
-                    thatPos = obj.position;
-
-                    /* Using simple operations instead of Math.sqrt, etc for speedup*/
-                    xDiff = thisPos.x - thatPos.x;
-                    yDiff = thisPos.y - thatPos.y;
-                    distance = (xDiff * xDiff) + (yDiff * yDiff);
-                    
-                    /* If distance < radius_1 + radius_2, circles intersect 
-                     * FIXME: Collisions for non-circles
-                     */
-
-                    radius = this.radius + obj.radius;
-                    if (distance < radius * radius) {
-                        thisVel = this.velocity;
-                        thatVel = obj.velocity;
-
-                        displacement = new gohan.utils.Vec2D(thisPos.x - thatPos.x, thisPos.y - thatPos.y);
-                        displacement.normalize();
-                        thisDot = thisVel.dot(displacement);
-                        thatDot = thatVel.dot(displacement); 
-
-                        thisVel.updateX(thisVel.x - (2 * displacement.x * thisDot));
-                        thisVel.updateY(thisVel.y - (2 * displacement.y * thisDot));
-                        thatVel.updateX(thatVel.x - (2 * displacement.x * thatDot));
-                        thatVel.updateY(thatVel.y - (2 * displacement.y * thatDot));
-                    }
-                }
-            }
+        this.radiusAt = function(angle) {
+            console.log("GOHAN ERROR: unimplemented radiusAt method");
+        };
+        this.radiusMax = function() {
+            console.log("unimplemented radiusMax in rectangle");
         };
         this.addForce = function(force) {
-            this.forces.objs.push(force);
+            this.forces.objs.push(gohan.copy(force));
             this.forces.dirty = true;
         };
         this.removeForce = function(force) {
@@ -277,26 +373,42 @@ gohan.objects = (function() {
             }
             this.forces.dirty = true;
         };
-        this.resolveForces = function () {
-            if(this.forces.dirty) {
-                var acc = this.forces.acceleration;
-                acc.updateX(0);
-                acc.updateY(0);
-                var forces = this.forces.objs;
-                var newForces = [];
 
-                for(var i = 0; i < forces.length; i++) {
-                    acc.add(forces[i]);
+        /* Remove forces with ttl == 0 */
+        this.removeDeadForces = function() {
+            var forces = this.forces.objs;
+            var newForces = [];
+            var force = null;
+            for(var i = 0; i < forces.length; i++) {
+                force = forces[i];
+                if(force.ttl !== 0) {
+                    force.ttl -= 1;
+                    newForces.push(force);
                 }
-                this.forces.dirty = false;
+            }
+            this.forces.objs = newForces;
+        };
+
+        this.resolveForces = function () {
+            this.removeDeadForces();
+            var forces = this.forces.objs;
+            var acc = this.forces.acceleration;
+            acc.updateX(0);
+            acc.updateY(0);
+
+            for(var i = 0; i < forces.length; i++) {
+                acc.addi(forces[i]);
             }
         };
+
+        this.sanityCheck();
     };
 
     /* Circle class */
     var Circle = function(position, velocity, context, radius) {
         GohanObject.call(this, position, velocity, context, 0, radius, radius);
         this.radius = radius;
+        this.maxRadius = radius;
         this.fill = function() {
             var x = this.position.x;
             var y = this.position.y;
@@ -314,6 +426,9 @@ gohan.objects = (function() {
             context.strokeStyle = "#000";
             context.stroke();
         };
+        this.radiusAt = function(angle) {
+            return this.radius;
+        };
     };
     Circle.prototype = new GohanObject;
     Circle.prototype.constructor = Circle;
@@ -325,18 +440,27 @@ gohan.objects = (function() {
          * TODO: Change to bounding boxes
          * TODO: Add spinning on collisions 
          */
-        position.updateX(position.x + width/2);
-        position.updateY(position.y + height/2);
-        GohanObject.call(this, position, velocity, context, angle, width/2, height/2);
+        var xRad = width/2;
+        var yRad = height/2;
+        position.updateX(position.x + xRad);
+        position.updateY(position.y + yRad);
+        
+        GohanObject.call(this, position, velocity, context, angle, xRad, yRad);
 
         this.width = width;
         this.height = height;
+        this.maxRadius = Math.sqrt(xRad * xRad + yRad * yRad);
+
+        /* Methods */
         this.fill = function() {
             context.save();
             context.rotate(this.angle);
             context.fillRect(this.position.x - this.width/2, this.position.y - this.height/2, this.width, this.height);
             context.restore();
 
+        };
+        this.radiusAt = function(angle) {
+            console.log("TODO fix rectangle radius at");
         };
     };
     Rectangle.prototype = new GohanObject;
