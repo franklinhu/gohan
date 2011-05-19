@@ -37,6 +37,7 @@ gohan.canvas = {
 gohan.flags = {
     drawVectors: false,
     gravity: false,
+    prettyCollisions: true,
     walls: {
         0: true,
         1: true,
@@ -344,17 +345,19 @@ gohan.objects = (function() {
             var timeElapsed = diff / projectedVel;
 
             /* Rewind time */
-            this.rewindTime(timeElapsed);
-            other.rewindTime(timeElapsed);
+            this.rewindTime(timeElapsed/2);
+            other.rewindTime(timeElapsed/2);
 
             /* Resolve the actual collision */
             var v1v2 = gohan.physics.elasticCollision(this.radius, other.radius, this.velocity, other.velocity);
             this.velocity = v1v2[0];
             other.velocity = v1v2[1];
 
-            /* Playback time */
-            this.playTime(timeElapsed);
-            other.playTime(timeElapsed);
+            if(!gohan.flags.prettyCollisions) {
+                /* Playback time */
+                this.playTime(timeElapsed);
+                other.playTime(timeElapsed);
+            }
         };
         this.checkWallCollisions = function() {
             /* If object collides with wall, reverse velocity */
