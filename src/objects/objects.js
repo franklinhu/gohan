@@ -35,6 +35,7 @@ gohan.canvas = {
 };
 
 gohan.flags = {
+    drawVectors: false,
     gravity: false,
     walls: {
         0: true,
@@ -160,8 +161,8 @@ gohan.physics = {
             c = u2.mult(c3),
             d = u1.mult(c4);
             
-        a.addi(b);
-        c.addi(d);
+        a.iadd(b);
+        c.iadd(d);
         return [a, c];
     }
 };
@@ -171,15 +172,29 @@ gohan.utils = (function() {
     var Data2D = function(x, y) {
         this.x = x;
         this.y = y;
+        this.length = null;
+        this.lengthDirty = true;
         this.add = function(other) {
-            var newObj = gohan.copy(this);
+            var newObj = gohan.utils.copy(this);
             newObj.x += other.x;
             newObj.y += other.y;
             return newObj;
         };
-        this.addi = function(other) {
+        this.iadd = function(other) {
+            this.lengthDirty = true;
             this.updateX(this.x + other.x);
             this.updateY(this.y + other.y);
+        };
+        this.sub = function(other) {
+            var newObj = gohan.utils.copy(this);
+            newObj.x -= other.x;
+            newObj.y -= other.y;
+            return newObj;
+        };
+        this.isub = function(other) {
+            this.lengthDirty = true;
+            this.updateX(this.x - other.x);
+            this.updateY(this.y - other.y);
         };
         this.mult = function(multiplier) {
             var newObj = gohan.utils.copy(this);
@@ -187,10 +202,19 @@ gohan.utils = (function() {
             newObj.y *= multiplier;
             return newObj;
         };
+        this.length = function() {
+            if(this.lengthDirty) {
+                this.length = Math.sqrt(x * x + y * y);
+                this.lengthDirty = false;
+            }
+            return this.length;
+        };
         this.updateX = function(newX) {
+            this.lengthDirty = true;
             this.x = newX;
         };
         this.updateY = function(newY) {
+            this.lengthDirty = true;
             this.y = newY;
         };
         this.dimension = 2;
@@ -218,13 +242,19 @@ gohan.utils = (function() {
             this.updateX(this.x + v.x);
             this.updateY(this.y + v.y);
         };
+        this.unstep = function(v) {
+            this.updateX(this.x - v.x);
+            this.updateY(this.y - v.y);
+        };
         this.squareDistanceTo = function(other) {
             var x = this.x - other.x;
             var y = this.y - other.y;
             return x * x + y * y;
         };
         this.vectorTo = function(other) {
-            return new Vec2D(other.x - this.x, other.y - this.y);
+            var newObj = gohan.utils.copy(other);
+            newObj.isub(this);
+            return newObj;
         };
     };
     Position2D.prototype = new Data2D;
@@ -234,7 +264,7 @@ gohan.utils = (function() {
     var Velocity2D = function(x, y) {
         Data2D.call(this, x, y);
         this.step = function(acceleration) {
-            this.addi(acceleration);
+            this.iadd(acceleration);
         };
     };
     Velocity2D.prototype = new Data2D;
@@ -324,16 +354,44 @@ gohan.objects = (function() {
             return true;
         };
         this.resolveCollision = function(other) {
-            /* FIXME: Collisions for non circles */
+            /* Check bounding sphere */
+            var squareDistance = this.position.squareDistanceTo(other.position);
+            var radius = this.maxRadius + other.maxRadius;
+            if (squareDistance > radius * radius) {
+                /* Not in bounding sphere, not colliding */
+                return;
+            }
 
+            /* FIXME: Possibly colliding, 
+               since circles, assume colliding for now */
+            /* FIXME: Collisions for non circles */
             var thisVel = this.velocity;
             var thatVel = other.velocity;
             var thisPos = this.position;
             var thatPos = other.position;
 
+            /* Calculate how much time elapsed since actual collision */
+            var diff = radius - Math.sqrt(squareDistance);
+            var vectorToThis = other.position.vectorTo(this.position);
+
+            var velocityWRTthis = thatVel.sub(thisVel);
+
+            var projectedVel = velocityWRTthis.dot(vectorToThis) / vectorToThis.length();
+
+            var timeElapsed = diff / projectedVel;
+
+            /* Rewind time */
+            this.rewindTime(timeElapsed);
+            other.rewindTime(timeElapsed);
+
+            /* Resolve the actual collision */
             var v1v2 = gohan.physics.elasticCollision(this.radius, other.radius, this.velocity, other.velocity);
             this.velocity = v1v2[0];
             other.velocity = v1v2[1];
+
+            /* Playback time */
+            this.playTime(timeElapsed);
+            other.playTime(timeElapsed);
         };
         this.checkWallCollisions = function() {
             /* If object collides with wall, reverse velocity */
@@ -397,8 +455,16 @@ gohan.objects = (function() {
             acc.updateY(0);
 
             for(var i = 0; i < forces.length; i++) {
-                acc.addi(forces[i]);
+                acc.iadd(forces[i]);
             }
+        };
+        
+        this.rewindTime = function(time) {
+            this.position.unstep(this.velocity);
+        };
+
+        this.playTime = function(time) {
+            this.position.step(this.velocity);
         };
 
         this.sanityCheck();
@@ -422,9 +488,18 @@ gohan.objects = (function() {
             context.moveTo(x, y);
             context.lineTo(x + rad * Math.cos(angle), y + rad * Math.sin(angle));
             context.closePath();
-
             context.strokeStyle = "#000";
             context.stroke();
+
+            /* Draw velocity vector */
+            if(gohan.flags.drawVectors) {
+                context.beginPath();
+                context.moveTo(x, y);
+                context.lineTo(x + 10 * this.velocity.x, y + 10 * this.velocity.y);
+                context.closePath();
+                context.storkeStyle = "#0000ff";
+                context.stroke();
+            }
         };
         this.radiusAt = function(angle) {
             return this.radius;
