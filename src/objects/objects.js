@@ -24,7 +24,7 @@
 
 var gohan = {};
 gohan.constants = {
-    gravity: 9.8
+    gravity: 0.1
 };
 
 gohan.canvas = {
@@ -77,11 +77,7 @@ gohan.init = function(/* arguments */) {
     /* Create walls if necessary */
 };
 
-/**
- *  findCollisions
- *  @return Array of unique pairs of colliding objects
- **/
-gohan.findCollisions = function() {
+gohan.resolveCollisions = function() {
     var objects = gohan.canvas.objects;
     var thisObj = null, thatObj = null;
     var collisions = [];
@@ -92,27 +88,10 @@ gohan.findCollisions = function() {
             thatObj = objects[k];
             thatObj.sanityCheck();
 
-            if(thisObj.collidesWith(thatObj)) {
-                collisions.push([thisObj, thatObj]);
-            }
+            thisObj.resolveCollision(thatObj);
         }
     }
     return collisions;
-};
-
-/**
- *  resolveCollision
- *  @param pair of colliding objects
- *  @return void
- **/
-gohan.resolveCollision = function(pair) {
-    var obj0 = pair[0];
-    var obj1 = pair[1];
-    if (obj0.fixed) {
-        obj0.resolveCollision(obj1);
-    } else {
-        obj1.resolveCollision(obj0);
-    }
 };
 
 gohan.draw = function() {
@@ -131,10 +110,7 @@ gohan.draw = function() {
 };
 
 gohan.step = function() {
-    var pairs = gohan.findCollisions();
-    for (var i = 0; i < pairs.length; i++) {
-        gohan.resolveCollision(pairs[i]);
-    }
+    gohan.resolveCollisions();
     gohan.draw();
 };
 
@@ -340,19 +316,6 @@ gohan.objects = (function() {
             this.velocity.step(this.forces.acceleration);
             this.position.step(this.velocity);
         };
-        this.collidesWith = function(other) {
-            /* Check bounding sphere */
-            var squareDistance = this.position.squareDistanceTo(other.position);
-            var radius = this.maxRadius + other.maxRadius;
-            if (squareDistance > radius * radius) {
-                /* Not in bounding sphere, not colliding */
-                return false;
-            }
-
-            /* FIXME: Possibly colliding, 
-               since circles, assume colliding for now */
-            return true;
-        };
         this.resolveCollision = function(other) {
             /* Check bounding sphere */
             var squareDistance = this.position.squareDistanceTo(other.position);
@@ -507,6 +470,13 @@ gohan.objects = (function() {
     };
     Circle.prototype = new GohanObject;
     Circle.prototype.constructor = Circle;
+
+    /* ConvexPolygon class */
+    var ConvexPolygon = function() {
+
+    };
+    ConvexPolygon.prototype = new GohanObject;
+    ConvexPolygon.prototype.constructor = ConvexPolygon;
 
     /* Rectangle class */
     var Rectangle = function(position, velocity, width, height, context, angle) {
