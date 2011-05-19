@@ -64,8 +64,8 @@ gohan.init = function(/* arguments */) {
     var obj = arguments[0];
     if (obj.canvas) {
         this.canvas.element = obj.canvas;
-        this.canvas.width = obj.canvas.width();
-        this.canvas.height = obj.canvas.height();
+        this.canvas.width = obj.canvas.width;
+        this.canvas.height = obj.canvas.height;
         this.canvas.objects = new Array();
         if (obj.flags) {
             this.flags = jQuery.extend(this.flags, obj.flags);
